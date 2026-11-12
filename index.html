@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KtIbK+pFYYWaV/C9W+yLLDmlrhW2nA3RU+J+EtrLtjs='; style-src 'sha256-XdWlHqCFsRIk4Lh7/6D4/l/qHGESOr3no2SCt852qac='; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<title>Buzón seguro</title>
+<style>
+:root{--fondo:#fff;--texto:#000;--tenue:#555;--borde:#000;--acento:#FFD22E;--caja:#f6f6f6;--mal:#9b1c1c}
+@media (prefers-color-scheme:dark){:root{--fondo:#000;--texto:#fff;--tenue:#bbb;--borde:#fff;--caja:#161616;--mal:#ff8a8a}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--texto);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+main{max-width:34rem;margin:0 auto;padding:16px}
+h1{font-size:1.35rem;margin:.5rem 0 .25rem}
+h2{font-size:1.05rem;margin:1.25rem 0 .5rem}
+p{margin:.5rem 0}
+.tenue{color:var(--tenue);font-size:.92rem}
+.frase{border:2px solid var(--borde);background:var(--acento);color:#000;padding:.75rem;font-weight:700;font-size:1.15rem;text-align:center;border-radius:6px}
+.caja{background:var(--caja);border-radius:6px;padding:.75rem;margin:.75rem 0}
+.mal{color:var(--mal);font-weight:600}
+label{display:block;font-weight:600;margin:.75rem 0 .25rem}
+select,input[type=password],input[type=text],textarea{width:100%;font:inherit;padding:.6rem;border:1.5px solid var(--borde);border-radius:6px;background:var(--fondo);color:var(--texto)}
+textarea{font:12px/1.4 ui-monospace,Menlo,monospace;height:6rem;word-break:break-all}
+button{font:inherit;font-weight:700;padding:.7rem 1rem;border-radius:6px;border:2px solid var(--borde);background:var(--fondo);color:var(--texto);margin:.25rem .25rem .25rem 0;cursor:pointer}
+button.principal{background:var(--acento);color:#000;border-color:#000}
+button[disabled]{opacity:.45;cursor:default}
+.pestanas{display:flex;gap:.5rem;margin-top:1rem}
+.pestanas button{flex:1;margin:0}
+.pestanas button[aria-pressed=true]{background:var(--texto);color:var(--fondo)}
+ul{padding-left:1.2rem;margin:.25rem 0}
+input[type=file]{display:none}
+details summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+<h1>Buzón seguro</h1>
+<p class="tenue">Documentos.app · Lo que prepares aquí se cifra en este móvil antes de salir.</p>
+<div id="sin-vale" class="caja" hidden><p class="mal">Este enlace no es válido o ya no tiene su vale.</p><p>Vuelve al chat del bot, escribe <b>/boveda</b> y abre el enlace nuevo.</p></div>
+<div id="sin-cripto" class="caja" hidden><p class="mal">Este navegador no puede cifrar.</p><p>Abre el enlace en Safari o en Chrome.</p></div>
+<section id="todo" hidden>
+<p>Frase de control. Tiene que ser <b>la misma</b> que te dio el bot; si no coincide, no sigas y avísale:</p>
+<div class="frase" id="frase">…</div>
+<p class="tenue" id="caduca"></p>
+<details id="privacidad" class="caja"><summary>Qué se hace con lo que mandas</summary>
+<p>Se cifra en este móvil. Solo lo puede abrir el equipo de Documentos.app (Docutelia), en su ordenador, y cada documento únicamente cuando tú lo autorizas desde el bot.</p>
+<p>Los documentos se borran solos en el plazo que elijas (30 días si no eliges otro). Las contraseñas y valores pasan a la caja fuerte del equipo, que los usa sin verlos, y se revisan a los 30 días.</p>
+<p>Esta página no envía nada a ningún sitio: te da un «sobre» cerrado que tú mandas al bot. Telegram solo ve el sobre cerrado.</p>
+<p>Para ver lo que tienes o borrarlo todo, escribe /mi_boveda o /borrar_boveda en el bot. No se aceptan certificados personales (.p12 o .pfx).</p>
+</details>
+<div class="pestanas" role="group" aria-label="Qué quieres mandar">
+<button id="p-doc" aria-pressed="true">Documento o foto</button>
+<button id="p-val" aria-pressed="false">Contraseña o valor</button>
+</div>
+<section id="s-doc">
+<label for="categoria">Qué es</label>
+<select id="categoria"></select>
+<label for="retencion">Cuánto tiempo se guarda</label>
+<select id="retencion"><option value="7">7 días</option><option value="30" selected>30 días</option><option value="90">90 días</option></select>
+<label>Archivos</label>
+<button id="b-foto">Hacer una foto</button><button id="b-archivos">Elegir archivos</button>
+<input type="file" id="i-foto" accept="image/*" capture="environment">
+<input type="file" id="i-archivos" multiple>
+<div id="lista" class="caja" hidden><ul id="ul"></ul><button id="b-quitar">Quitar todos</button></div>
+<p class="tenue">Hasta 19 MB en total por sobre. En el DNI, si puedes, tapa lo que no haga falta.</p>
+<button id="b-cifrar-doc" class="principal">Cifrar</button>
+</section>
+<section id="s-val" hidden>
+<label for="proposito">Para qué es</label>
+<select id="proposito"></select>
+<label for="valor">Contraseña o valor</label>
+<input type="password" id="valor" autocomplete="off" autocapitalize="off" spellcheck="false">
+<button id="b-ver">Mostrar</button>
+<button id="b-cifrar-val" class="principal">Cifrar</button>
+</section>
+<div id="aviso" class="caja mal" hidden></div>
+<section id="r-doc" class="caja" hidden>
+<p><b>Sobre listo</b> (<span id="r-doc-info"></span>). Ahora mándalo al bot: pulsa «Compartir», elige Telegram y el chat del bot. Si no te deja, descárgalo y adjúntalo en el chat.</p>
+<button id="b-compartir" class="principal">Compartir</button><button id="b-descargar">Descargar</button>
+</section>
+<section id="r-val" class="caja" hidden>
+<p><b>Sobre listo.</b> Cópialo y pégalo en el chat del bot. Es un texto cerrado: nadie puede leer la contraseña en él.</p>
+<textarea id="t-val" readonly></textarea>
+<button id="b-copiar" class="principal">Copiar</button><button id="b-compartir-val">Compartir</button>
+</section>
+</section>
+</main>
+<script>
+(() => {
+'use strict';
+
+const MAGIA = [0x42, 0x5a, 0x53, 0x47, 0x31]; // "BZSG1" (buzón seguro)
+const PREFIJO_TEXTO = 'SOBRE1.';
+const USOS = ['documentos', 'valores'];
+const MAX_CUERPO = 19 * 1024 * 1024; // un bot solo descarga hasta 20 MB
+const MAX_TEXTO = 4000; // un mensaje de Telegram admite 4096 caracteres
+
+const sutil = () => globalThis.crypto.subtle;
+const utf8 = (s) => new TextEncoder().encode(s);
+const deUtf8 = (b) => new TextDecoder('utf-8', { fatal: true }).decode(b);
+const aleatorio = (n) => globalThis.crypto.getRandomValues(new Uint8Array(n));
+
+function b64u(bytes) {
+  const b = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  let s = '';
+  for (let i = 0; i < b.length; i += 0x8000) s += String.fromCharCode(...b.subarray(i, i + 0x8000));
+  return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function deB64u(texto) {
+  const t = String(texto ?? '');
+  if (!/^[A-Za-z0-9_-]*$/.test(t)) throw new Error('base64url inválido');
+  const s = atob(t.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (t.length % 4)) % 4));
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = s.charCodeAt(i);
+  return out;
+}
+const unir = (...partes) => {
+  const out = new Uint8Array(partes.reduce((n, p) => n + p.length, 0));
+  let i = 0;
+  for (const p of partes) { out.set(p, i); i += p.length; }
+  return out;
+};
+async function sha256(bytes) { return new Uint8Array(await sutil().digest('SHA-256', bytes)); }
+const hex = (b) => [...b].map((x) => x.toString(16).padStart(2, '0')).join('');
+function igualesTiempoConstante(a, b) {
+  if (a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a[i] ^ b[i];
+  return d === 0;
+}
+
+async function generarPar() {
+  const par = await sutil().generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const publica = await sutil().exportKey('jwk', par.publicKey);
+  const privada = await sutil().exportKey('jwk', par.privateKey);
+  const jwk = { kty: 'EC', crv: 'P-256', x: publica.x, y: publica.y };
+  return { publica: jwk, privada: { ...jwk, d: privada.d }, kid: await idDeLlave(jwk) };
+}
+async function rawDePublica(jwk) {
+  const k = await sutil().importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, { name: 'ECDH', namedCurve: 'P-256' }, true, []);
+  return new Uint8Array(await sutil().exportKey('raw', k));
+}
+async function idDeLlave(jwk) { return hex(await sha256(await rawDePublica(jwk))).slice(0, 16); }
+const importarPublica = (jwk) => sutil().importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+const importarPrivada = (jwk) => sutil().importKey('jwk', { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y, d: jwk.d }, { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveBits']);
+
+const PALABRAS = (
+  'abeja abrigo acero agua aire ajo ala alba alga almendra ancla anillo arco arena arpa arroz astro atlas avena azul ' +
+  'ballena banco barco barro bosque bota brisa bronce burro cabra cacao caja calle cama campo canal canoa caracol carta casa ' +
+  'castillo cebra cedro cereza cielo cine ciruela cisne ciudad clavo cobre cohete collar cometa conejo copa coral cordero corona ' +
+  'cuerda cueva dado diente duna eco elefante enero erizo escoba espiga estrella faro fiesta flor foca fresa fuego fuente gallo ' +
+  'ganso gato gema girasol globo gorra grano grillo guante guitarra haba hada helado hielo hierba higo hoja horno hormiga huerto ' +
+  'huevo isla jarra jirafa joya juego junco kiwi lago lana lazo leche lechuza libro lima lino lirio lobo loro luna madera ' +
+  'mango manta manzana mapa mar marea mesa miel mimbre mochila molino mono mora muelle musgo nabo naranja nido niebla nieve noche ' +
+  'nube nuez oca ola olivo olla oro oso oveja pala paloma pan panda papel pato pera perla perro pez piano pino pinza pipa plata ' +
+  'playa pluma polen pozo prado pulpo puente puerta queso rana rama rayo red reloj remo roble roca rosa rueda sal sapo selva seta ' +
+  'silla sol sombra sopa suelo taza techo tela tigre tinta tiza tomate topo toro torre trigo trueno uva vaca vapor vela velero ' +
+  'verano viento vino yate yegua yeso zanahoria zapato zorro zumo abeto acelga alondra arcilla bambu bellota brujula cactus ' +
+  'canela cantaro carbon cascada cesta chispa cinta cuarzo delta esponja fragua gaviota granja hiedra jazmin laurel ' +
+  'lienzo lluvia marfil menta nogal ostra panal pimienta rocio salvia tejado valle'
+).split(' ');
+async function fraseDeControl(jwkDocumentos, jwkValores) {
+  if (PALABRAS.length !== 256) throw new Error("lista de palabras rota");
+  const h = await sha256(unir(await rawDePublica(jwkDocumentos), await rawDePublica(jwkValores)));
+  return [h[0], h[1], h[2], h[3]].map((i) => PALABRAS[i]).join(' ');
+}
+
+const info = (uso, kid) => utf8(`buzon-seguro/v1/${uso}/${kid}`);
+async function llaveAes(compartido, epkRaw, uso, kid) {
+  const base = await sutil().importKey('raw', compartido, 'HKDF', false, ['deriveKey']);
+  return sutil().deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: await sha256(epkRaw), info: info(uso, kid) }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}
+async function sellarCon(jwk, kid, uso, datos, aadDe) {
+  const eph = await sutil().generateKey({ name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']);
+  const compartido = new Uint8Array(await sutil().deriveBits({ name: 'ECDH', public: await importarPublica(jwk) }, eph.privateKey, 256));
+  const epkRaw = new Uint8Array(await sutil().exportKey('raw', eph.publicKey));
+  const iv = aleatorio(12);
+  const epk = b64u(epkRaw);
+  const ivt = b64u(iv);
+  const aad = aadDe(epk, ivt);
+  const cifrado = new Uint8Array(await sutil().encrypt({ name: 'AES-GCM', iv, additionalData: aad }, await llaveAes(compartido, epkRaw, uso, kid), datos));
+  compartido.fill(0);
+  return { epk, iv: ivt, cifrado };
+}
+async function abrirCon(jwkPrivada, kid, uso, epk, ivt, cifrado, aad) {
+  const epkRaw = deB64u(epk);
+  if (epkRaw.length !== 65) throw new Error('llave efímera inválida');
+  const pub = await sutil().importKey('raw', epkRaw, { name: 'ECDH', namedCurve: 'P-256' }, false, []);
+  const compartido = new Uint8Array(await sutil().deriveBits({ name: 'ECDH', public: pub }, await importarPrivada(jwkPrivada), 256));
+  try {
+    return new Uint8Array(await sutil().decrypt({ name: 'AES-GCM', iv: deB64u(ivt), additionalData: aad }, await llaveAes(compartido, epkRaw, uso, kid), cifrado));
+  } catch { throw new Error('no abre (llave equivocada o sobre manipulado)'); } finally { compartido.fill(0); }
+}
+
+const aadMeta = (kid, epk, iv) => utf8(JSON.stringify({ meta: 1, kid, epk, iv }));
+async function sellarMeta(jwkValores, kidValores, meta) {
+  const r = await sellarCon(jwkValores, kidValores, 'meta', utf8(JSON.stringify(meta)), (epk, iv) => aadMeta(kidValores, epk, iv));
+  return { kid: kidValores, epk: r.epk, iv: r.iv, c: b64u(r.cifrado) };
+}
+async function abrirMeta(jwkPrivadaValores, m) {
+  if (!m || typeof m !== 'object') throw new Error('sin meta');
+  const bytes = await abrirCon(jwkPrivadaValores, m.kid, 'meta', m.epk, m.iv, deB64u(m.c), aadMeta(m.kid, m.epk, m.iv));
+  return JSON.parse(deUtf8(bytes));
+}
+
+function canonica(c) {
+  const meta = c.meta ? { kid: String(c.meta.kid), epk: String(c.meta.epk), iv: String(c.meta.iv), c: String(c.meta.c) } : null;
+  return JSON.stringify({ v: c.v, uso: c.uso, kid: c.kid, vale: c.vale, n: c.n, meta, epk: c.epk, iv: c.iv });
+}
+async function mac(secretoVale, canon, cifrado) {
+  const k = await sutil().importKey('raw', secretoVale, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return new Uint8Array(await sutil().sign('HMAC', k, unir(utf8(canon), await sha256(cifrado))));
+}
+
+function empaquetarDocumentos({ categoria, retencion_dias, archivos }) {
+  const manifiesto = { creado: new Date().toISOString(), categoria, retencion_dias, archivos: archivos.map((a) => ({ nombre: String(a.nombre), tipo: String(a.tipo || 'application/octet-stream'), tamano: a.datos.length })) };
+  const m = utf8(JSON.stringify(manifiesto));
+  const largo = new Uint8Array(4);
+  new DataView(largo.buffer).setUint32(0, m.length);
+  return unir(largo, m, ...archivos.map((a) => a.datos));
+}
+function desempaquetarDocumentos(bytes) {
+  if (bytes.length < 4) throw new Error('contenido vacío');
+  const n = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(0);
+  if (n > 65536 || 4 + n > bytes.length) throw new Error('manifiesto inválido');
+  const manifiesto = JSON.parse(deUtf8(bytes.subarray(4, 4 + n)));
+  let i = 4 + n;
+  const archivos = [];
+  for (const a of manifiesto.archivos ?? []) {
+    const t = Number(a.tamano);
+    if (!Number.isSafeInteger(t) || t < 0 || i + t > bytes.length) throw new Error('archivo fuera de rango');
+    archivos.push({ nombre: String(a.nombre ?? 'archivo'), tipo: String(a.tipo ?? ''), datos: bytes.subarray(i, i + t) });
+    i += t;
+  }
+  if (i !== bytes.length) throw new Error('sobran bytes');
+  return { manifiesto, archivos };
+}
+const extension = (nombre) => (String(nombre ?? '').toLowerCase().match(/\.([a-z0-9]{1,8})$/)?.[1] ?? '');
+const ES_CERTIFICADO = /^(?:p12|pfx)$/;
+
+async function crearSobre({ llaves, vale, n, uso, contenido, meta }) {
+  if (!USOS.includes(uso)) throw new Error('uso inválido');
+  if (contenido.length > MAX_CUERPO) throw new Error('demasiado grande');
+  const destino = llaves[uso];
+  const metaSellado = uso === 'documentos' ? await sellarMeta(llaves.valores.jwk, llaves.valores.kid, meta) : null;
+  const base = { v: 1, uso, kid: destino.kid, vale: vale.id, n, meta: metaSellado };
+  const r = await sellarCon(destino.jwk, destino.kid, uso, contenido, (epk, iv) => utf8(canonica({ ...base, epk, iv })));
+  const cab = { ...base, epk: r.epk, iv: r.iv };
+  cab.mac = b64u(await mac(vale.secreto, canonica(cab), r.cifrado));
+  const cj = utf8(JSON.stringify(cab));
+  const largo = new Uint8Array(4);
+  new DataView(largo.buffer).setUint32(0, cj.length);
+  return unir(new Uint8Array(MAGIA), largo, cj, r.cifrado);
+}
+const sobreATexto = (bytes) => PREFIJO_TEXTO + b64u(bytes);
+function textoASobre(texto) {
+  const m = String(texto ?? '').match(/SOBRE1\.([A-Za-z0-9_-]{40,})/);
+  if (!m) return null;
+  return deB64u(m[1]);
+}
+function esSobre(bytes) { return bytes?.length > 9 && MAGIA.every((x, i) => bytes[i] === x); }
+
+function leerCabecera(bytes) {
+  if (!esSobre(bytes)) throw new Error('no es un sobre');
+  const n = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(5);
+  if (n < 10 || n > 16384 || 9 + n >= bytes.length) throw new Error('cabecera inválida');
+  const cab = JSON.parse(deUtf8(bytes.subarray(9, 9 + n)));
+  if (cab.v !== 1 || !USOS.includes(cab.uso) || typeof cab.kid !== 'string' || typeof cab.vale !== 'string' || !Number.isSafeInteger(cab.n) || typeof cab.mac !== 'string') throw new Error('cabecera inválida');
+  if ((cab.uso === 'documentos') !== Boolean(cab.meta)) throw new Error('cabecera inválida (meta)');
+  return { cab, cifrado: bytes.subarray(9 + n) };
+}
+async function comprobarMac(cab, cifrado, secretoVale) {
+  return igualesTiempoConstante(deB64u(cab.mac), await mac(secretoVale, canonica(cab), cifrado));
+}
+async function abrirCuerpo(cab, cifrado, jwkPrivada) {
+  return abrirCon(jwkPrivada, cab.kid, cab.uso, cab.epk, cab.iv, cifrado, utf8(canonica(cab)));
+}
+
+const LLAVES = {"documentos":{"kid":"1390cad32bed9d23","jwk":{"kty":"EC","crv":"P-256","x":"ncYDRZ_f6e9PhVquXNBZjtPSk2i2Id42AEfv6d5YYFs","y":"poLEWsNh4eDiJZlNstRjn0XIw9lx1rqlHxUYyPVZGA4"}},"valores":{"kid":"a1925222993f29c4","jwk":{"kty":"EC","crv":"P-256","x":"MoZRdnB_mk9vniQE7icM0XdHRqMdgwDwIlfcc2fhZ7s","y":"eVzVNAXx9iWCihsxNd8Fz9Yefl30vR3ieZXhCBgVxrs"}}};
+
+const CATS = {"dni":"Documento de identidad (DNI, NIE, pasaporte)","documento":"PDF o documento","captura":"Captura con datos personales","otro":"Otro documento"};
+const PROPS = {"acceso-beta-despacho":"Acceso a la beta (cuenta de despacho)","acceso-beta-titular":"Acceso a la beta (cuenta de titular)","pin-pruebas":"PIN o clave de pruebas","token":"Token o clave de API","otro":"Otro valor"};
+const $ = (id) => document.getElementById(id);
+const fmtHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' });
+const tam = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
+const nAleatorio = () => globalThis.crypto.getRandomValues(new Uint32Array(1))[0] >>> 1;
+let vale = null;
+let archivos = [];
+let ultimoArchivo = null;
+let ultimoTexto = '';
+function aviso(t) { $('aviso').textContent = t; $('aviso').hidden = !t; }
+function leerVale() {
+  const h = new URLSearchParams(location.hash.slice(1));
+  const m = String(h.get('v') || '').match(/^([0-9a-f]{16})\.([A-Za-z0-9_-]{43})$/);
+  if (!m) return null;
+  const hasta = Number(h.get('h')) * 1000;
+  return { id: m[1], secreto: deB64u(m[2]), hasta: Number.isFinite(hasta) && hasta > 0 ? hasta : null };
+}
+const caducado = () => vale.hasta && Date.now() > vale.hasta;
+function pestana(doc) {
+  $('p-doc').setAttribute('aria-pressed', String(doc)); $('p-val').setAttribute('aria-pressed', String(!doc));
+  $('s-doc').hidden = !doc; $('s-val').hidden = doc; aviso('');
+}
+function pintarLista() {
+  $('ul').replaceChildren(...archivos.map((f) => { const li = document.createElement('li'); li.textContent = (f.name || 'foto') + ' · ' + tam(f.size); return li; }));
+  $('lista').hidden = !archivos.length;
+}
+function anadir(input) {
+  for (const f of input.files) {
+    if (ES_CERTIFICADO.test(extension(f.name))) { aviso('Los certificados personales (.p12 o .pfx) no se aceptan. Para las pruebas se usan certificados de prueba.'); continue; }
+    archivos.push(f);
+  }
+  input.value = '';
+  pintarLista();
+}
+const sello = () => new Date().toISOString().replace(/[-:]/g, '').slice(0, 13).replace('T', '-');
+async function cifrarDoc() {
+  aviso('');
+  if (caducado()) return aviso('El enlace ya caducó. Pide uno nuevo al bot con /boveda.');
+  if (!archivos.length) return aviso('Elige al menos un archivo o haz una foto.');
+  const total = archivos.reduce((n, f) => n + f.size, 0);
+  if (total > MAX_CUERPO - 65536) return aviso('Pasa de 19 MB. Prepáralo en varios sobres.');
+  $('b-cifrar-doc').disabled = true;
+  try {
+    const lista = [];
+    for (const f of archivos) lista.push({ nombre: f.name || 'foto.jpg', tipo: f.type, datos: new Uint8Array(await f.arrayBuffer()) });
+    const categoria = $('categoria').value;
+    const retencion_dias = Number($('retencion').value);
+    const contenido = empaquetarDocumentos({ categoria, retencion_dias, archivos: lista });
+    const meta = { categoria, retencion_dias, archivos: lista.map((a) => ({ ext: extension(a.nombre), tamano: a.datos.length })) };
+    const sobre = await crearSobre({ llaves: LLAVES, vale, n: nAleatorio(), uso: 'documentos', contenido, meta });
+    contenido.fill(0); for (const a of lista) a.datos.fill(0);
+    ultimoArchivo = new File([sobre], 'sobre-' + sello() + '.sobre', { type: 'application/octet-stream' });
+    $('r-doc-info').textContent = lista.length + (lista.length === 1 ? ' archivo, ' : ' archivos, ') + tam(sobre.length);
+    archivos = []; pintarLista();
+    $('r-doc').hidden = false; $('r-val').hidden = true;
+    $('r-doc').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { aviso('No he podido cifrarlo: ' + e.message); } finally { $('b-cifrar-doc').disabled = false; }
+}
+async function cifrarVal() {
+  aviso('');
+  if (caducado()) return aviso('El enlace ya caducó. Pide uno nuevo al bot con /boveda.');
+  const valor = $('valor').value;
+  if (!valor.trim()) return aviso('Escribe la contraseña o el valor.');
+  $('b-cifrar-val').disabled = true;
+  try {
+    const contenido = new TextEncoder().encode(JSON.stringify({ proposito: $('proposito').value, valor }));
+    const sobre = await crearSobre({ llaves: LLAVES, vale, n: nAleatorio(), uso: 'valores', contenido });
+    contenido.fill(0);
+    $('valor').value = ''; $('valor').type = 'password'; $('b-ver').textContent = 'Mostrar';
+    const t = sobreATexto(sobre);
+    if (t.length > MAX_TEXTO) {
+      ultimoArchivo = new File([sobre], 'sobre-' + sello() + '.sobre', { type: 'application/octet-stream' });
+      $('r-doc-info').textContent = 'un valor largo, ' + tam(sobre.length);
+      $('r-doc').hidden = false; $('r-val').hidden = true;
+      return;
+    }
+    ultimoTexto = t; $('t-val').value = t;
+    $('r-val').hidden = false; $('r-doc').hidden = true;
+    $('r-val').scrollIntoView({ behavior: 'smooth' });
+  } catch (e) { aviso('No he podido cifrarlo: ' + e.message); } finally { $('b-cifrar-val').disabled = false; }
+}
+function descargar() {
+  if (!ultimoArchivo) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(ultimoArchivo); a.download = ultimoArchivo.name;
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 60000);
+}
+async function compartir() {
+  if (!ultimoArchivo) return;
+  if (navigator.canShare && navigator.canShare({ files: [ultimoArchivo] })) {
+    try { await navigator.share({ files: [ultimoArchivo] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  descargar();
+}
+async function copiar() {
+  try { await navigator.clipboard.writeText(ultimoTexto); $('b-copiar').textContent = 'Copiado'; setTimeout(() => { $('b-copiar').textContent = 'Copiar'; }, 3000); }
+  catch { $('t-val').select(); aviso('No he podido copiarlo solo: mantén pulsado el texto y elige Copiar.'); }
+}
+async function compartirTexto() {
+  if (navigator.share) { try { await navigator.share({ text: ultimoTexto }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  copiar();
+}
+async function iniciar() {
+  for (const [k, v] of Object.entries(CATS)) $('categoria').append(new Option(v, k));
+  for (const [k, v] of Object.entries(PROPS)) $('proposito').append(new Option(v, k));
+  if (!globalThis.crypto || !globalThis.crypto.subtle) { $('sin-cripto').hidden = false; return; }
+  vale = leerVale();
+  if (!vale) { $('sin-vale').hidden = false; return; }
+  // El vale sale de la barra de direcciones y del historial (si recargas, vuelve a abrir el enlace desde el chat).
+  try { history.replaceState(null, '', location.pathname + location.search); } catch {}
+  $('frase').textContent = await fraseDeControl(LLAVES.documentos.jwk, LLAVES.valores.jwk);
+  $('caduca').textContent = vale.hasta ? 'Este enlace vale hasta las ' + fmtHora.format(new Date(vale.hasta)) + '.' : '';
+  let visto = false;
+  try { visto = localStorage.getItem('buzon-visto') === '1'; localStorage.setItem('buzon-visto', '1'); } catch {}
+  $('privacidad').open = !visto;
+  $('todo').hidden = false;
+  $('p-doc').addEventListener('click', () => pestana(true));
+  $('p-val').addEventListener('click', () => pestana(false));
+  $('b-foto').addEventListener('click', () => $('i-foto').click());
+  $('b-archivos').addEventListener('click', () => $('i-archivos').click());
+  $('i-foto').addEventListener('change', (e) => anadir(e.target));
+  $('i-archivos').addEventListener('change', (e) => anadir(e.target));
+  $('b-quitar').addEventListener('click', () => { archivos = []; pintarLista(); });
+  $('b-cifrar-doc').addEventListener('click', cifrarDoc);
+  $('b-cifrar-val').addEventListener('click', cifrarVal);
+  $('b-ver').addEventListener('click', () => { const v = $('valor'); v.type = v.type === 'password' ? 'text' : 'password'; $('b-ver').textContent = v.type === 'password' ? 'Mostrar' : 'Ocultar'; });
+  $('b-compartir').addEventListener('click', compartir);
+  $('b-descargar').addEventListener('click', descargar);
+  $('b-copiar').addEventListener('click', copiar);
+  $('b-compartir-val').addEventListener('click', compartirTexto);
+}
+iniciar().catch((e) => aviso('Algo ha fallado al preparar la página: ' + e.message));
+})();
+</script>
+</body>
+</html>
