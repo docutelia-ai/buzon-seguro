@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-KtIbK+pFYYWaV/C9W+yLLDmlrhW2nA3RU+J+EtrLtjs='; style-src 'sha256-XdWlHqCFsRIk4Lh7/6D4/l/qHGESOr3no2SCt852qac='; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-fecw7z2Hwf3YWbFpAFqdwaiebL9DFtHrfjiVSGYpNQc='; style-src 'sha256-XdWlHqCFsRIk4Lh7/6D4/l/qHGESOr3no2SCt852qac='; img-src data:; connect-src 'none'; form-action 'none'; base-uri 'none'">
 <meta name="referrer" content="no-referrer">
 <meta name="robots" content="noindex, nofollow">
 <title>Buzón seguro</title>
@@ -281,7 +281,7 @@ async function abrirCuerpo(cab, cifrado, jwkPrivada) {
 const LLAVES = {"documentos":{"kid":"1390cad32bed9d23","jwk":{"kty":"EC","crv":"P-256","x":"ncYDRZ_f6e9PhVquXNBZjtPSk2i2Id42AEfv6d5YYFs","y":"poLEWsNh4eDiJZlNstRjn0XIw9lx1rqlHxUYyPVZGA4"}},"valores":{"kid":"a1925222993f29c4","jwk":{"kty":"EC","crv":"P-256","x":"MoZRdnB_mk9vniQE7icM0XdHRqMdgwDwIlfcc2fhZ7s","y":"eVzVNAXx9iWCihsxNd8Fz9Yefl30vR3ieZXhCBgVxrs"}}};
 
 const CATS = {"dni":"Documento de identidad (DNI, NIE, pasaporte)","documento":"PDF o documento","captura":"Captura con datos personales","otro":"Otro documento"};
-const PROPS = {"acceso-beta-despacho":"Acceso a la beta (cuenta de despacho)","acceso-beta-titular":"Acceso a la beta (cuenta de titular)","pin-pruebas":"PIN o clave de pruebas","token":"Token o clave de API","otro":"Otro valor"};
+const PROPS = {"acceso-beta-despacho":"Acceso a la beta (cuenta de despacho)","acceso-beta-titular":"Acceso a la beta (cuenta de titular)","pin-pruebas":"PIN o clave de pruebas","token":"Token o clave de API","fnmt-solicitud":"Código de solicitud de la FNMT","fnmt-dni":"DNI (prueba de la FNMT)","fnmt-apellido":"Primer apellido, como sale en el DNI (prueba de la FNMT)","fnmt-movil":"Móvil de la videoidentificación","otro":"Otro valor"};
 const $ = (id) => document.getElementById(id);
 const fmtHora = new Intl.DateTimeFormat('es-ES', { hour: '2-digit', minute: '2-digit' });
 const tam = (n) => n < 1024 ? n + ' B' : n < 1048576 ? (n / 1024).toFixed(0) + ' KB' : (n / 1048576).toFixed(1).replace('.', ',') + ' MB';
